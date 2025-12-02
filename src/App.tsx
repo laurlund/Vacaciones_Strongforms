@@ -62,7 +62,7 @@ const DEFAULT_PIN = "1234";
 // --- TRADUCCIONES ---
 const TRANSLATIONS: any = {
   es: {
-    app_title: "Portal RRHH v9 (TS Fix)",
+    app_title: "Portal RRHH v10 (Final)",
     nav_summary: "Mi Resumen",
     nav_calendar: "Calendario Equipo",
     nav_print: "Imprimir",
