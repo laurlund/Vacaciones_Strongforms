@@ -11,16 +11,9 @@ import {
   updateDoc,
   writeBatch,
 } from "firebase/firestore";
-import {
-  getAuth,
-  signInAnonymously,
-  onAuthStateChanged,
-  signInWithCustomToken,
-} from "firebase/auth";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
 import {
   Calendar,
-  Check,
-  X,
   User,
   Plus,
   Trash2,
@@ -44,13 +37,12 @@ import {
   MessageSquare,
   Users,
   AlertTriangle,
-  Globe,
-  // NOTA: No usamos iconos nuevos para evitar errores de versión
+  X,
 } from "lucide-react";
 
 // --- 1. CONFIGURACIÓN ---
 
-const myFirebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyBntbZNbTIH6AdESFEc3hFkwNjoSKF2YdE",
   authDomain: "vacaciones-strongforms.firebaseapp.com",
   projectId: "vacaciones-strongforms",
@@ -59,24 +51,18 @@ const myFirebaseConfig = {
   appId: "1:434045801898:web:076453346e5b8a508d47d3",
 };
 
-const firebaseConfig =
-  typeof __firebase_config !== "undefined"
-    ? JSON.parse(__firebase_config)
-    : myFirebaseConfig;
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const appId =
-  typeof __app_id !== "undefined" ? __app_id : "empresa-vacaciones-prod";
+const appId = "empresa-vacaciones-prod";
 
 const ADMIN_NAME = "Sergio Laurlund";
 const DEFAULT_PIN = "1234";
 
 // --- TRADUCCIONES ---
-const TRANSLATIONS = {
+const TRANSLATIONS: any = {
   es: {
-    app_title: "Portal RRHH v6 (Excel)", // VERSIÓN 6
+    app_title: "Portal RRHH v9 (TS Fix)",
     nav_summary: "Mi Resumen",
     nav_calendar: "Calendario Equipo",
     nav_print: "Imprimir",
@@ -137,7 +123,7 @@ const TRANSLATIONS = {
     btn_excel: "Descargar Excel",
   },
   en: {
-    app_title: "HR Portal v6",
+    app_title: "HR Portal",
     nav_summary: "My Summary",
     nav_calendar: "Team Calendar",
     nav_print: "Print",
@@ -349,10 +335,9 @@ const INITIAL_EMPLOYEES = [
   { name: "Sergio Laurlund", role: "admin", pin: "1234" },
 ];
 
-// --- 2. UTILITIES (FECHAS CORREGIDAS) ---
+// --- 2. UTILITIES ---
 
-// FIX ZONA HORARIA: Construir fecha manualmente para evitar UTC shift
-const formatDate = (date) => {
+const formatDate = (date: any) => {
   if (!date) return "";
   const d = new Date(date);
   const year = d.getFullYear();
@@ -361,7 +346,7 @@ const formatDate = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-const getDaysInMonth = (year, month) => {
+const getDaysInMonth = (year: any, month: any) => {
   const date = new Date(year, month, 1);
   const days = [];
   while (date.getMonth() === month) {
@@ -371,12 +356,16 @@ const getDaysInMonth = (year, month) => {
   return days;
 };
 
-const calculateNaturalDuration = (startStr, endStr, holidays = []) => {
+const calculateNaturalDuration = (
+  startStr: any,
+  endStr: any,
+  holidays: any = []
+) => {
   if (!startStr || !endStr) return 0;
   let count = 0;
   let current = new Date(startStr);
   const end = new Date(endStr);
-  const holidaySet = new Set(holidays.map((h) => h.date));
+  const holidaySet = new Set(holidays.map((h: any) => h.date));
   while (current <= end) {
     const dateStr = formatDate(current);
     if (!holidaySet.has(dateStr)) count++;
@@ -385,12 +374,16 @@ const calculateNaturalDuration = (startStr, endStr, holidays = []) => {
   return count;
 };
 
-const calculateWorkingDuration = (startStr, endStr, holidays = []) => {
+const calculateWorkingDuration = (
+  startStr: any,
+  endStr: any,
+  holidays: any = []
+) => {
   if (!startStr || !endStr) return 0;
   let count = 0;
   let current = new Date(startStr);
   const end = new Date(endStr);
-  const holidaySet = new Set(holidays.map((h) => h.date));
+  const holidaySet = new Set(holidays.map((h: any) => h.date));
   while (current <= end) {
     const day = current.getDay();
     const dateStr = formatDate(current);
@@ -400,7 +393,7 @@ const calculateWorkingDuration = (startStr, endStr, holidays = []) => {
   return count;
 };
 
-const getFiscalYear = (dateStr) => {
+const getFiscalYear = (dateStr: any) => {
   if (!dateStr) return new Date().getFullYear();
   const [yearStr, monthStr, dayStr] = dateStr.split("-");
   const year = parseInt(yearStr, 10);
@@ -410,7 +403,7 @@ const getFiscalYear = (dateStr) => {
   return year;
 };
 
-function stringToColor(str) {
+function stringToColor(str: any) {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
@@ -420,7 +413,7 @@ function stringToColor(str) {
 }
 
 // --- EXCEL HELPER ---
-const exportToExcel = (fileName, htmlContent) => {
+const exportToExcel = (fileName: string, htmlContent: string) => {
   const template = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
     <head>
@@ -464,22 +457,22 @@ const exportToExcel = (fileName, htmlContent) => {
   URL.revokeObjectURL(url);
 };
 
-// --- 3. SUB-COMPONENTS (DEFINED BEFORE APP) ---
+// --- 3. SUB-COMPONENTS ---
 
-let confirmAction = null;
-const openConfirm = (message, onConfirm) => {
+let confirmAction: any = null;
+const openConfirm = (message: any, onConfirm: any) => {
   const event = new CustomEvent("open-confirm", {
     detail: { message, onConfirm },
   });
   window.dispatchEvent(event);
 };
 
-function ConfirmModal({ t }) {
+function ConfirmModal({ t }: any) {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const handler = (e) => {
+    const handler = (e: any) => {
       setMessage(e.detail.message);
       confirmAction = e.detail.onConfirm;
       setIsOpen(true);
@@ -524,7 +517,15 @@ function ConfirmModal({ t }) {
   );
 }
 
-const StatCard = ({ title, value, total, color, icon, customSubtext, t }) => (
+const StatCard = ({
+  title,
+  value,
+  total,
+  color,
+  icon,
+  customSubtext,
+  t,
+}: any) => (
   <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 relative overflow-hidden">
     <div className={`absolute top-0 right-0 p-3 opacity-10 text-${color}-500`}>
       {icon}
@@ -552,14 +553,14 @@ const StatCard = ({ title, value, total, color, icon, customSubtext, t }) => (
   </div>
 );
 
-const Badge = ({ type, t }) => {
-  const styles = {
+const Badge = ({ type, t }: any) => {
+  const styles: any = {
     vacation: "bg-green-100 text-green-800",
     sick: "bg-red-100 text-red-800",
     personal: "bg-purple-100 text-purple-800",
     family: "bg-blue-100 text-blue-800",
   };
-  const labels = {
+  const labels: any = {
     vacation: t("stats_vacation"),
     sick: t("stats_sick"),
     personal: t("stats_personal"),
@@ -574,7 +575,7 @@ const Badge = ({ type, t }) => {
   );
 };
 
-const TypeBtn = ({ active, onClick, label }) => (
+const TypeBtn = ({ active, onClick, label }: any) => (
   <button
     type="button"
     onClick={onClick}
@@ -589,7 +590,7 @@ const TypeBtn = ({ active, onClick, label }) => (
 );
 
 // --- TEAM CALENDAR ---
-function TeamCalendar({ employees, requests, holidays }) {
+function TeamCalendar({ employees, requests, holidays }: any) {
   const [date, setDate] = useState(new Date());
   const year = date.getFullYear();
   const month = date.getMonth();
@@ -601,22 +602,22 @@ function TeamCalendar({ employees, requests, holidays }) {
   const handlePrev = () => setDate(new Date(year, month - 1, 1));
   const handleNext = () => setDate(new Date(year, month + 1, 1));
 
-  const getCellStatus = (d, empId) => {
+  const getCellStatus = (d: any, empId: any) => {
     const dateStr = formatDate(d);
-    const isHoliday = holidays.some((h) => h.date === dateStr);
+    const isHoliday = holidays.some((h: any) => h.date === dateStr);
     if (isHoliday) return { type: "holiday", label: "F" };
     const dayOfWeek = d.getDay();
     if (dayOfWeek === 0 || dayOfWeek === 6)
       return { type: "weekend", label: "" };
     const req = requests.find(
-      (r) =>
+      (r: any) =>
         r.userId === empId && dateStr >= r.startDate && dateStr <= r.endDate
     );
     if (req) return { type: req.type, label: "" };
     return { type: "empty", label: "" };
   };
 
-  const getStyle = (type) => {
+  const getStyle = (type: any) => {
     switch (type) {
       case "vacation":
         return "bg-green-500";
@@ -664,7 +665,7 @@ function TeamCalendar({ employees, requests, holidays }) {
               <th className="p-3 text-left font-bold text-slate-500 w-48 sticky left-0 bg-slate-50 z-20 border-r border-slate-200">
                 Empleado
               </th>
-              {days.map((d) => (
+              {days.map((d: any) => (
                 <th
                   key={formatDate(d)}
                   className={`p-1 min-w-[2.5rem] text-center font-medium border-r border-slate-100 ${
@@ -684,7 +685,7 @@ function TeamCalendar({ employees, requests, holidays }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {employees.map((emp) => (
+            {employees.map((emp: any) => (
               <tr key={emp.id} className="hover:bg-slate-50 transition-colors">
                 <td className="p-3 font-medium text-slate-700 sticky left-0 bg-white hover:bg-slate-50 z-10 border-r border-slate-200 flex items-center">
                   <div
@@ -693,7 +694,7 @@ function TeamCalendar({ employees, requests, holidays }) {
                   ></div>
                   <span className="truncate w-32">{emp.name}</span>
                 </td>
-                {days.map((d) => {
+                {days.map((d: any) => {
                   const status = getCellStatus(d, emp.id);
                   return (
                     <td
@@ -746,16 +747,16 @@ function TeamCalendar({ employees, requests, holidays }) {
 }
 
 // --- PRINT VIEWS (EXCEL ENABLED) ---
-function PrintableYearView({ user, requests, holidays, onBack }) {
+function PrintableYearView({ user, requests, holidays, onBack }: any) {
   const [year, setYear] = useState(new Date().getFullYear());
   const months = Array.from({ length: 12 }, (_, i) => i);
-  const getDayColor = (date) => {
+  const getDayColor = (date: any) => {
     const dateStr = formatDate(date);
     const dayReq = requests.find(
-      (r) =>
+      (r: any) =>
         r.userId === user.id && dateStr >= r.startDate && dateStr <= r.endDate
     );
-    const isHoliday = holidays.some((h) => h.date === dateStr);
+    const isHoliday = holidays.some((h: any) => h.date === dateStr);
     if (dayReq) {
       if (dayReq.type === "vacation") return "bg-green-200";
       if (dayReq.type === "sick") return "bg-red-200";
@@ -778,14 +779,14 @@ function PrintableYearView({ user, requests, holidays, onBack }) {
       days.forEach((d) => {
         const dateStr = formatDate(d);
         const dayReq = requests.find(
-          (r) =>
+          (r: any) =>
             r.userId === user.id &&
             dateStr >= r.startDate &&
             dateStr <= r.endDate
         );
-        const isHoliday = holidays.some((h) => h.date === dateStr);
+        const isHoliday = holidays.some((h: any) => h.date === dateStr);
         let bgColorClass = "";
-        let text = d.getDate();
+        let text: any = d.getDate();
 
         if (dayReq) {
           if (dayReq.type === "vacation") bgColorClass = "bg-green";
@@ -850,7 +851,7 @@ function PrintableYearView({ user, requests, holidays, onBack }) {
         <h2 className="text-lg text-slate-600">{user.name}</h2>
       </div>
       <div className="grid grid-cols-3 gap-6 text-xs">
-        {months.map((month) => {
+        {months.map((month: any) => {
           const days = getDaysInMonth(year, month);
           const monthName = new Date(year, month, 1).toLocaleString("es-ES", {
             month: "long",
@@ -870,7 +871,7 @@ function PrintableYearView({ user, requests, holidays, onBack }) {
                 {Array.from({ length: offset }).map((_, i) => (
                   <div key={`off-${i}`}></div>
                 ))}
-                {days.map((d) => (
+                {days.map((d: any) => (
                   <div
                     key={formatDate(d)}
                     className={`text-center p-1 rounded-sm ${getDayColor(d)}`}
@@ -887,7 +888,7 @@ function PrintableYearView({ user, requests, holidays, onBack }) {
   );
 }
 
-function PrintableTeamView({ employees, requests, holidays, onBack }) {
+function PrintableTeamView({ employees, requests, holidays, onBack }: any) {
   const [startMonth, setStartMonth] = useState(0);
   const [endMonth, setEndMonth] = useState(11);
   const [year, setYear] = useState(new Date().getFullYear());
@@ -896,13 +897,13 @@ function PrintableTeamView({ employees, requests, holidays, onBack }) {
     (_, i) => startMonth + i
   );
 
-  const getDayColor = (date, empId) => {
+  const getDayColor = (date: any, empId: any) => {
     const dateStr = formatDate(date);
     const dayReq = requests.find(
-      (r) =>
+      (r: any) =>
         r.userId === empId && dateStr >= r.startDate && dateStr <= r.endDate
     );
-    const isHoliday = holidays.some((h) => h.date === dateStr);
+    const isHoliday = holidays.some((h: any) => h.date === dateStr);
     if (dayReq) {
       if (dayReq.type === "vacation") return "bg-green-300";
       if (dayReq.type === "sick") return "bg-red-300";
@@ -932,17 +933,17 @@ function PrintableTeamView({ employees, requests, holidays, onBack }) {
       days.forEach((d) => (tableHTML += `<td>${d.getDate()}</td>`));
       tableHTML += `</tr>`;
 
-      employees.forEach((emp) => {
+      employees.forEach((emp: any) => {
         tableHTML += `<tr><td>${emp.name}</td>`;
         days.forEach((d) => {
           const dateStr = formatDate(d);
           const dayReq = requests.find(
-            (r) =>
+            (r: any) =>
               r.userId === emp.id &&
               dateStr >= r.startDate &&
               dateStr <= r.endDate
           );
-          const isHoliday = holidays.some((h) => h.date === dateStr);
+          const isHoliday = holidays.some((h: any) => h.date === dateStr);
           let bgColorClass = "";
 
           if (dayReq) {
@@ -1060,7 +1061,7 @@ function PrintableTeamView({ employees, requests, holidays, onBack }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {employees.map((emp) => (
+                    {employees.map((emp: any) => (
                       <tr key={emp.id}>
                         <td className="border p-1 font-medium truncate">
                           {emp.name}
@@ -1080,14 +1081,58 @@ function PrintableTeamView({ employees, requests, holidays, onBack }) {
           );
         })}
       </div>
+      <div className="mt-8 flex justify-center space-x-6 text-sm print:flex border-t pt-4">
+        <div className="flex items-center">
+          <div
+            className="w-4 h-4 bg-green-300 mr-2 border"
+            style={{ printColorAdjust: "exact" }}
+          ></div>{" "}
+          Vacaciones
+        </div>
+        <div className="flex items-center">
+          <div
+            className="w-4 h-4 bg-purple-300 mr-2 border"
+            style={{ printColorAdjust: "exact" }}
+          ></div>{" "}
+          Asuntos P.
+        </div>
+        <div className="flex items-center">
+          <div
+            className="w-4 h-4 bg-red-300 mr-2 border"
+            style={{ printColorAdjust: "exact" }}
+          ></div>{" "}
+          Baja
+        </div>
+        <div className="flex items-center">
+          <div
+            className="w-4 h-4 bg-blue-300 mr-2 border"
+            style={{ printColorAdjust: "exact" }}
+          ></div>{" "}
+          Familiar
+        </div>
+        <div className="flex items-center">
+          <div
+            className="w-4 h-4 bg-orange-200 mr-2 border"
+            style={{ printColorAdjust: "exact" }}
+          ></div>{" "}
+          Festivo
+        </div>
+        <div className="flex items-center">
+          <div
+            className="w-4 h-4 bg-gray-200 mr-2 border"
+            style={{ printColorAdjust: "exact" }}
+          ></div>{" "}
+          Finde
+        </div>
+      </div>
     </div>
   );
 }
 
 // --- SCREENS ---
-function LoginScreen({ employees, onLogin, t, changeLanguage, lang }) {
+function LoginScreen({ employees, onLogin, t, changeLanguage, lang }: any) {
   const [seeding, setSeeding] = useState(false);
-  const [selectedEmp, setSelectedEmp] = useState(null);
+  const [selectedEmp, setSelectedEmp] = useState<any>(null);
   const [pinInput, setPinInput] = useState("");
   const [error, setError] = useState("");
 
@@ -1111,13 +1156,13 @@ function LoginScreen({ employees, onLogin, t, changeLanguage, lang }) {
         )
       );
       await Promise.all(promises);
-    } catch (error) {
+    } catch (error: any) {
       alert("Error: " + error.message);
       setSeeding(false);
     }
   };
 
-  const handlePinSubmit = (e) => {
+  const handlePinSubmit = (e: any) => {
     e.preventDefault();
     const userPin = selectedEmp.pin || DEFAULT_PIN;
     if (pinInput === userPin) onLogin(selectedEmp);
@@ -1258,7 +1303,7 @@ function LoginScreen({ employees, onLogin, t, changeLanguage, lang }) {
                 {t("login_select")}
               </h3>
               <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
-                {employees.map((emp) => (
+                {employees.map((emp: any) => (
                   <button
                     key={emp.id}
                     onClick={() => setSelectedEmp(emp)}
@@ -1306,7 +1351,7 @@ function RequestForm({
   onClose,
   totalAvailable,
   t,
-}) {
+}: any) {
   const [type, setType] = useState("vacation");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -1326,7 +1371,7 @@ function RequestForm({
     [startDate, currentYearView]
   );
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
     setError("");
     if (duration <= 0) {
@@ -1517,7 +1562,14 @@ function RequestForm({
   );
 }
 
-function Dashboard({ user, requests, holidays, settings, totalAvailable, t }) {
+function Dashboard({
+  user,
+  requests,
+  holidays,
+  settings,
+  totalAvailable,
+  t,
+}: any) {
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [yearView, setYearView] = useState(
     getFiscalYear(formatDate(new Date()))
@@ -1525,9 +1577,12 @@ function Dashboard({ user, requests, holidays, settings, totalAvailable, t }) {
 
   const myRequests = useMemo(() => {
     return requests
-      .filter((r) => r.userId === user.id)
-      .filter((r) => getFiscalYear(r.startDate) === yearView)
-      .sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
+      .filter((r: any) => r.userId === user.id)
+      .filter((r: any) => getFiscalYear(r.startDate) === yearView)
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+      );
   }, [requests, user.id, yearView]);
 
   const stats = useMemo(() => {
@@ -1536,7 +1591,7 @@ function Dashboard({ user, requests, holidays, settings, totalAvailable, t }) {
       personalDays = 0,
       familyDays = 0,
       usedVacationWork = 0;
-    myRequests.forEach((req) => {
+    myRequests.forEach((req: any) => {
       const duration = calculateNaturalDuration(
         req.startDate,
         req.endDate,
@@ -1565,7 +1620,7 @@ function Dashboard({ user, requests, holidays, settings, totalAvailable, t }) {
     };
   }, [myRequests, totalAvailable, holidays]);
 
-  const handleDeleteRequest = async (reqId) => {
+  const handleDeleteRequest = async (reqId: any) => {
     openConfirm(t("confirm_delete"), async () => {
       await deleteDoc(
         doc(db, "artifacts", appId, "public", "data", "requests", reqId)
@@ -1714,7 +1769,7 @@ function Dashboard({ user, requests, holidays, settings, totalAvailable, t }) {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-100">
-                {myRequests.map((req) => {
+                {myRequests.map((req: any) => {
                   const duration = calculateNaturalDuration(
                     req.startDate,
                     req.endDate,
@@ -1784,7 +1839,7 @@ function Dashboard({ user, requests, holidays, settings, totalAvailable, t }) {
   );
 }
 
-function AdminPanel({ employees, holidays, requests, settings, t }) {
+function AdminPanel({ employees, holidays, requests, settings, t }: any) {
   const [newHolidayName, setNewHolidayName] = useState("");
   const [newHolidayDate, setNewHolidayDate] = useState("");
   const [limits, setLimits] = useState(settings);
@@ -1813,7 +1868,7 @@ function AdminPanel({ employees, holidays, requests, settings, t }) {
   const updateAllDays = async () => {
     openConfirm(t("admin_set_30"), async () => {
       const batch = writeBatch(db);
-      employees.forEach((emp) => {
+      employees.forEach((emp: any) => {
         const ref = doc(
           db,
           "artifacts",
@@ -1828,7 +1883,7 @@ function AdminPanel({ employees, holidays, requests, settings, t }) {
       await batch.commit();
     });
   };
-  const updateBalance = async (empId, currentAdj) => {
+  const updateBalance = async (empId: any, currentAdj: any) => {
     const newAdj = prompt("Ajuste (-1, +2...):", currentAdj || 0);
     if (newAdj !== null) {
       await updateDoc(
@@ -1837,7 +1892,7 @@ function AdminPanel({ employees, holidays, requests, settings, t }) {
       );
     }
   };
-  const addHoliday = async (e) => {
+  const addHoliday = async (e: any) => {
     e.preventDefault();
     if (!newHolidayName || !newHolidayDate) return;
     await addDoc(
@@ -1847,11 +1902,11 @@ function AdminPanel({ employees, holidays, requests, settings, t }) {
     setNewHolidayName("");
     setNewHolidayDate("");
   };
-  const removeHoliday = async (id) =>
+  const removeHoliday = async (id: any) =>
     await deleteDoc(
       doc(db, "artifacts", appId, "public", "data", "holidays", id)
     );
-  const updatePin = async (empId, newPin) => {
+  const updatePin = async (empId: any, newPin: any) => {
     const pin = prompt("Nuevo PIN:", newPin);
     if (pin && pin.length === 4)
       await updateDoc(
@@ -1862,7 +1917,7 @@ function AdminPanel({ employees, holidays, requests, settings, t }) {
   const downloadCSV = () => {
     let csvContent =
       "data:text/csv;charset=utf-8,Empleado,Tipo,Inicio,Fin,Dias Naturales,Notas\n";
-    requests.forEach((req) => {
+    requests.forEach((req: any) => {
       csvContent += `"${req.userName}",${req.type},${req.startDate},${
         req.endDate
       },,"${req.notes || ""}"\n`;
@@ -1979,8 +2034,8 @@ function AdminPanel({ employees, holidays, requests, settings, t }) {
           </form>
           <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
             {holidays
-              .sort((a, b) => a.date.localeCompare(b.date))
-              .map((h) => (
+              .sort((a: any, b: any) => a.date.localeCompare(b.date))
+              .map((h: any) => (
                 <div
                   key={h.id}
                   className="flex justify-between items-center p-3 bg-red-50 rounded-lg text-sm group border border-red-100"
@@ -2010,7 +2065,7 @@ function AdminPanel({ employees, holidays, requests, settings, t }) {
           </div>
           <div className="flex-1 bg-slate-50 rounded-xl p-4 mb-4 overflow-y-auto max-h-60 custom-scrollbar">
             <ul className="space-y-2">
-              {employees.map((e) => (
+              {employees.map((e: any) => (
                 <li
                   key={e.id}
                   className="flex justify-between items-center text-sm text-slate-600 p-2 hover:bg-slate-100 rounded"
@@ -2070,23 +2125,24 @@ function AdminPanel({ employees, holidays, requests, settings, t }) {
 
 // --- 4. APP PRINCIPAL (DEFINIDA AL FINAL) ---
 export default function VacationApp() {
-  const [user, setUser] = useState(null);
-  const [currentUserData, setCurrentUserData] = useState(null);
+  const [user, setUser] = useState<any>(null);
+  const [currentUserData, setCurrentUserData] = useState<any>(null);
   const [view, setView] = useState("dashboard");
   const [loading, setLoading] = useState(true);
   const [lang, setLang] = useState(
     () => localStorage.getItem("app_lang") || "es"
   );
 
-  const t = (key) => TRANSLATIONS[lang][key] || TRANSLATIONS["es"][key] || key;
-  const changeLanguage = (l) => {
+  const t = (key: any) =>
+    TRANSLATIONS[lang][key] || TRANSLATIONS["es"][key] || key;
+  const changeLanguage = (l: any) => {
     setLang(l);
     localStorage.setItem("app_lang", l);
   };
 
-  const [employees, setEmployees] = useState([]);
-  const [requests, setRequests] = useState([]);
-  const [holidays, setHolidays] = useState([]);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [holidays, setHolidays] = useState<any[]>([]);
   const [globalSettings, setGlobalSettings] = useState({
     maxPersonalDays: 2,
     maxSickDays: 0,
@@ -2094,12 +2150,9 @@ export default function VacationApp() {
   });
 
   useEffect(() => {
+    // FIX VERCEL: Uso directo de anónimo, sin tokens mágicos
     const initAuth = async () => {
-      if (typeof __initial_auth_token !== "undefined" && __initial_auth_token) {
-        await signInWithCustomToken(auth, __initial_auth_token);
-      } else {
-        await signInAnonymously(auth);
-      }
+      await signInAnonymously(auth);
     };
     initAuth().catch(console.error);
     const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
@@ -2119,7 +2172,7 @@ export default function VacationApp() {
     );
     onSnapshot(settingsRef, (docSnap) => {
       if (docSnap.exists()) {
-        setGlobalSettings(docSnap.data());
+        setGlobalSettings(docSnap.data() as any);
       } else {
         setDoc(settingsRef, {
           maxPersonalDays: 2,
@@ -2132,7 +2185,7 @@ export default function VacationApp() {
       collection(db, "artifacts", appId, "public", "data", "employees"),
       (snapshot) => {
         const emps = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-        emps.sort((a, b) => {
+        emps.sort((a: any, b: any) => {
           if (a.name === ADMIN_NAME) return 1;
           if (b.name === ADMIN_NAME) return -1;
           return a.name.localeCompare(b.name);
@@ -2157,12 +2210,12 @@ export default function VacationApp() {
 
   useEffect(() => {
     if (employees.length > 0 && currentUserData) {
-      const freshData = employees.find((e) => e.id === currentUserData.id);
+      const freshData = employees.find((e: any) => e.id === currentUserData.id);
       if (freshData) setCurrentUserData(freshData);
     }
   }, [employees]);
 
-  const handleLogin = (employee) => {
+  const handleLogin = (employee: any) => {
     setCurrentUserData(employee);
     localStorage.setItem("localEmployeeId", employee.id);
     setView("dashboard");
